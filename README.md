@@ -7,6 +7,7 @@ GBDA302 Week 3 Example 1: Instructions Screen with Back button
 ## Authors
 
 Karen Cochrane and David Han
+Edited by: Olivia Yip, o2yip, 21087252
 
 ---
 

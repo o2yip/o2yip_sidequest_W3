@@ -1,128 +1,198 @@
 // NOTE: Do NOT add setup() or draw() in this file
 // setup() and draw() live in main.js
-// This file only defines:
-// 1) drawGame() → what the game screen looks like
-// 2) input handlers → what happens when the player clicks or presses keys
-// 3) helper functions specific to this screen
 
 // ------------------------------
-// Button data
+// Player state
 // ------------------------------
-// This object stores all the information needed to draw
-// and interact with the button on the game screen.
-// Keeping this in one object makes it easier to move,
-// resize, or restyle the button later.
-const gameBtn = {
-  x: 400, // x position (centre of the button)
-  y: 550, // y position (centre of the button)
-  w: 260, // width
-  h: 90, // height
-  label: "PRESS HERE", // text shown on the button
-};
+let health = 3;      // start with 3 hearts
+let storyNode = 0;   // current story node
+const maxHealth = 3;
 
 // ------------------------------
-// Main draw function for this screen
+// Story nodes with two choices: safe vs risky
+// Safe = gain heart, Risky = lose heart
 // ------------------------------
-// drawGame() is called from main.js *only*
-// when currentScreen === "game"
-function drawGame() {
-  // Set background colour for the game screen
-  background(240, 230, 140);
+const story = [
+  {
+    text: "You wake up in a strange forest. Two paths lie ahead.",
+    safe: {
+      label: "Take the sunny path",
+      effect: () => {
+        health = Math.min(health + 1, maxHealth); // gain a heart
+        nextNode();
+      },
+    },
+    risky: {
+      label: "Take the dark path",
+      effect: () => {
+        health--;
+        checkHealth();
+        nextNode();
+      },
+    },
+  },
+  {
+    text: "The forest grows quiet. You hear footsteps behind you.",
+    safe: {
+      label: "Hide behind a tree",
+      effect: () => {
+        health = Math.min(health + 1, maxHealth);
+        nextNode();
+      },
+    },
+    risky: {
+      label: "Run forward quickly",
+      effect: () => {
+        health--;
+        checkHealth();
+        nextNode();
+      },
+    },
+  },
+  {
+    text: "You stumble on a root and hurt yourself.",
+    safe: {
+      label: "Take your time to recover",
+      effect: () => {
+        health = Math.min(health + 1, maxHealth);
+        nextNode();
+      },
+    },
+    risky: {
+      label: "Keep moving fast",
+      effect: () => {
+        health--;
+        checkHealth();
+        nextNode();
+      },
+    },
+  },
+  {
+    text: "You see the edge of the forest. Freedom is close!",
+    safe: {
+      label: "Walk carefully",
+      effect: () => {
+        health = Math.min(health + 1, maxHealth);
+        endJourney();
+      },
+    },
+    risky: {
+      label: "Run to the exit",
+      effect: () => {
+        health--;
+        checkHealth();
+        endJourney();
+      },
+    },
+  },
+];
 
-  // ---- Title and instructions text ----
-  fill(0); // black text
-  textSize(32);
-  textAlign(CENTER, CENTER);
-  text("Game Screen", width / 2, 160);
-
-  textSize(18);
-  text(
-    "Click the button (or press ENTER) for a random result.",
-    width / 2,
-    210,
-  );
-
-  // ---- Draw the button ----
-  // We pass the button object to a helper function
-  drawGameButton(gameBtn);
-
-  // ---- Cursor feedback ----
-  // If the mouse is over the button, show a hand cursor
-  // Otherwise, show the normal arrow cursor
-  cursor(isHover(gameBtn) ? HAND : ARROW);
+// ------------------------------
+// Helper: go to next story node
+// ------------------------------
+function nextNode() {
+  if (storyNode < story.length - 1) {
+    storyNode++;
+  } else {
+    endJourney();
+  }
 }
 
 // ------------------------------
-// Button drawing helper
+// Helper: check for zero health
 // ------------------------------
-// This function is responsible *only* for drawing the button.
-// It does NOT handle clicks or game logic.
+function checkHealth() {
+  if (health <= 0) {
+    currentScreen = "lose"; // immediate lose
+  }
+}
+
+// ------------------------------
+// Helper: finish journey
+// ------------------------------
+function endJourney() {
+  if (health > 0) {
+    currentScreen = "win"; // player survived
+  } else {
+    currentScreen = "lose"; // player lost all hearts
+  }
+}
+
+// ------------------------------
+// Buttons for choices
+// ------------------------------
+const safeBtn = { x: 250, y: 550, w: 200, h: 90, label: "SAFE" };
+const riskyBtn = { x: 550, y: 550, w: 200, h: 90, label: "RISKY" };
+
+// ------------------------------
+// Draw game screen
+// ------------------------------
+function drawGame() {
+  background(240, 230, 140);
+
+  // ---- Health display ----
+  fill(0);
+  textAlign(LEFT, CENTER);
+  textSize(24);
+  text("Health: " + "❤️".repeat(health), 40, 40);
+
+  // ---- Title ----
+  textAlign(CENTER, CENTER);
+  textSize(32);
+  text("Your Journey", width / 2, 140);
+
+  // ---- Story text ----
+  textSize(20);
+  textAlign(CENTER, TOP);
+  text(story[storyNode].text, width / 2, 220, 600);
+
+  // ---- Update button labels ----
+  safeBtn.label = story[storyNode].safe.label;
+  riskyBtn.label = story[storyNode].risky.label;
+
+  // ---- Draw buttons ----
+  drawGameButton(safeBtn);
+  drawGameButton(riskyBtn);
+
+  // ---- Cursor feedback ----
+  cursor(isHover(safeBtn) || isHover(riskyBtn) ? HAND : ARROW);
+}
+
+// ------------------------------
+// Draw button helper
+// ------------------------------
 function drawGameButton({ x, y, w, h, label }) {
   rectMode(CENTER);
-
-  // Check if the mouse is hovering over the button
-  // isHover() is defined in main.js so it can be shared
   const hover = isHover({ x, y, w, h });
 
   noStroke();
+  fill(hover ? color(180, 220, 255) : color(200, 220, 255));
+  rect(x, y, w, h, 14);
 
-  // Change button colour when hovered
-  // This gives visual feedback to the player
-  fill(
-    hover
-      ? color(180, 220, 255, 220) // lighter blue on hover
-      : color(200, 220, 255, 190), // normal state
-  );
-
-  // Draw the button rectangle
-  rect(x, y, w, h, 14); // last value = rounded corners
-
-  // Draw the button text
   fill(0);
-  textSize(28);
+  textSize(20);
   textAlign(CENTER, CENTER);
   text(label, x, y);
 }
 
 // ------------------------------
-// Mouse input for this screen
+// Mouse input
 // ------------------------------
-// This function is called from main.js
-// only when currentScreen === "game"
 function gameMousePressed() {
-  // Only trigger the outcome if the button is clicked
-  if (isHover(gameBtn)) {
-    triggerRandomOutcome();
+  if (isHover(safeBtn)) {
+    story[storyNode].safe.effect();
+  } else if (isHover(riskyBtn)) {
+    story[storyNode].risky.effect();
   }
 }
 
 // ------------------------------
-// Keyboard input for this screen
+// Keyboard input
 // ------------------------------
-// Allows keyboard-only interaction (accessibility + design)
 function gameKeyPressed() {
-  // ENTER key triggers the same behaviour as clicking the button
-  if (keyCode === ENTER) {
-    triggerRandomOutcome();
-  }
-}
-
-// ------------------------------
-// Game logic: win or lose
-// ------------------------------
-// This function decides what happens next in the game.
-// It does NOT draw anything.
-function triggerRandomOutcome() {
-  // random() returns a value between 0 and 1
-  // Here we use a 50/50 chance:
-  // - less than 0.5 → win
-  // - 0.5 or greater → lose
-  //
-  // You can bias this later, for example:
-  // random() < 0.7 → 70% chance to win
-  if (random() < 0.5) {
-    currentScreen = "win";
-  } else {
-    currentScreen = "lose";
+  if (keyCode === LEFT_ARROW) {
+    story[storyNode].safe.effect();
+  } else if (keyCode === RIGHT_ARROW) {
+    story[storyNode].risky.effect();
   }
 }
